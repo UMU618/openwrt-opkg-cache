@@ -6,11 +6,6 @@ import ssl
 import urllib.request
 import urllib.parse
 
-# def split_url(url):
-#     pos = url.find('://')
-#     if pos == -1:
-#         raise Exception('Invalid URL: ' + url)
-#     return url[pos + 3:].split('/')
 def get_save_path(url, save_dir):
     u = urllib.parse.urlparse(url)
     s = u.path.split('/')
@@ -40,11 +35,34 @@ def download(url, save_dir):
 
     return save_path
 
-if __name__ == '__main__':
-    s = urllib.parse.urlparse(conf.base_url)
-    base_url = s.scheme + '://' + s.netloc + s.path
-    print('base_url:', base_url)
+def download_pkgs(url, save_dir):
+    path = download(url + 'Packages', save_dir)
+    download(url + 'Packages.asc', save_dir)
+    download(url + 'Packages.gz', save_dir)
+    download(url + 'Packages.manifest', save_dir)
+    download(url + 'Packages.sig', save_dir)
 
+    print('open', path, 'for parsing...')
+    with open(path, "r") as f:
+        for line in f.read().splitlines():
+            if line.startswith(conf.PREFIX):
+                download(url + line[len(conf.PREFIX):], save_dir)
+
+# s = urllib.parse.urlparse('http://downloads.openwrt.org/releases/18.06.4/targets/ramips/mt7620/')
+# base_url = s.scheme + '://' + s.netloc + s.path
+# if not base_url.endswith('/'):
+#     base_url += '/'
+# print('base_url:', base_url)
+# download(base_url + 'sha256sums.asc', save_dir)
+# path = download(base_url + 'sha256sums', save_dir)
+# print('open', path, 'for parsing...')
+# with open(path, "r") as f:
+#     for line in f.read().splitlines():
+#         p2 = line.split(' ')[1]
+#         if p2.startswith('*packages'):
+#             download(base_url + p2[1:], save_dir)
+
+if __name__ == '__main__':
     cd = os.path.dirname(os.path.abspath(__file__))
     save_dir = os.path.abspath(os.path.join(cd, conf.save_dir))
     print('save_dir:', save_dir)
@@ -52,12 +70,7 @@ if __name__ == '__main__':
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-    download(base_url + 'sha256sums.asc', save_dir)
-    path = download(base_url + 'sha256sums', save_dir)
-
-    print('open', path, 'for parsing...')
-    with open(path, "r") as f:
-        for line in f.read().splitlines():
-            p2 = line.split(' ')[1]
-            if p2.startswith('*packages'):
-                download(base_url + p2[1:], save_dir)
+    for url in conf.urls:
+        if not url.endswith('/'):
+            url += '/'
+        download_pkgs(url, save_dir)
