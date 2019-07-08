@@ -5,6 +5,7 @@ import os
 import ssl
 import urllib.request
 import urllib.parse
+import hashlib
 
 def get_save_path(url, save_dir):
     u = urllib.parse.urlparse(url)
@@ -15,7 +16,7 @@ def get_save_path(url, save_dir):
 def download(url, save_dir):
     save_path = get_save_path(url, save_dir)
     if os.path.isfile(save_path):
-        print('File', save_path, 'exists, ignored.')
+        #print('File', save_path, 'exists, ignored.')
         return save_path
 
     req = urllib.request.Request(url)
@@ -35,6 +36,17 @@ def download(url, save_dir):
 
     return save_path
 
+def get_file_hash(path):
+    file = open(path, "rb")
+    h = hashlib.sha256()
+    while True:
+        buffer = file.read(4096)
+        if len(buffer) < 1:
+            break
+        h.update(buffer)
+    file.close()
+    return h.hexdigest()
+
 def download_pkgs(url, save_dir):
     path = download(url + 'Packages', save_dir)
     download(url + 'Packages.asc', save_dir)
@@ -44,9 +56,24 @@ def download_pkgs(url, save_dir):
 
     print('open', path, 'for parsing...')
     with open(path, "r") as f:
+        last_pkg = ''
+        size = 0
         for line in f.read().splitlines():
-            if line.startswith(conf.PREFIX):
-                download(url + line[len(conf.PREFIX):], save_dir)
+            if line.startswith(conf.FILENAME):
+                last_pkg = download(url + line[len(conf.FILENAME):], save_dir)
+            if line.startswith(conf.SIZE):
+                size = int(line[len(conf.SIZE):])
+            if line.startswith(conf.HASH):
+                actual_size = os.path.getsize(last_pkg)
+                if size == actual_size:
+                    hash = line[len(conf.HASH):]
+                    actual_hash = get_file_hash(last_pkg)
+                    if hash != actual_hash:
+                        print('Hash of', last_pkg, 'is', actual_hash, 'should be', hash)
+                    #else:
+                    #    print('Hash of', last_pkg, 'checked')
+                else:
+                    print('Size of', last_pkg, 'is', actual_size, 'should be', size)
 
 # s = urllib.parse.urlparse('http://downloads.openwrt.org/releases/18.06.4/targets/ramips/mt7620/')
 # base_url = s.scheme + '://' + s.netloc + s.path

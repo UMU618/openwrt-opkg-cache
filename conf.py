@@ -1,5 +1,7 @@
 # No need to change normally
-PREFIX = 'Filename: '
+FILENAME = 'Filename: '
+SIZE = 'Size: '
+HASH = 'SHA256sum: '
 
 # newifi y1s
 urls = [
