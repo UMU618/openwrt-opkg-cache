@@ -1,0 +1,21 @@
+# No need to change normally
+FILENAME = 'Filename: '
+SIZE = 'Size: '
+HASH = 'SHA256sum: '
+
+# newifi d1
+urls = [
+    'http://downloads.openwrt.org/snapshots/targets/ramips/mt7621/packages'
+    , 'http://downloads.openwrt.org/snapshots/targets/ramips/mt7621/kmods/4.14.146-1-51a9bed8b19046c927a810a437ccc029'
+    , 'http://downloads.openwrt.org/snapshots/packages/mipsel_24kc/base'
+    , 'http://downloads.openwrt.org/snapshots/packages/mipsel_24kc/luci'
+    , 'http://downloads.openwrt.org/snapshots/packages/mipsel_24kc/packages'
+    , 'http://downloads.openwrt.org/snapshots/packages/mipsel_24kc/routing'
+    , 'http://downloads.openwrt.org/snapshots/packages/mipsel_24kc/telephony'
+]
+
+save_dir = './'
+
+if __name__ == '__main__':
+    print('urls:', urls)
+    print('save_dir:', save_dir)
