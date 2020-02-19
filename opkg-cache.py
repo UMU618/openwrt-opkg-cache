@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import argparse
 import conf
 import os
 import ssl
@@ -52,7 +53,7 @@ def get_file_hash(path):
     return h.hexdigest()
 
 
-def download_pkgs(url, save_dir, packages_first):
+def download_pkgs(url, save_dir, packages_first, skip_kmod):
     path = download(url + 'Packages', save_dir)
     if packages_first:
         download(url + 'Packages.asc', save_dir)
@@ -66,7 +67,11 @@ def download_pkgs(url, save_dir, packages_first):
             size = 0
             for line in f.read().splitlines():
                 if line.startswith(conf.FILENAME):
-                    last_pkg = download(url + line[len(conf.FILENAME):], save_dir)
+                    filename = line[len(conf.FILENAME):]
+                    last_pkg = download(url + filename, save_dir)
+                    if skip_kmod and filename.startswith('kmod-'):
+                        print('Skipping', filename)
+                        continue
                 if line.startswith(conf.SIZE):
                     size = int(line[len(conf.SIZE):])
                 if line.startswith(conf.HASH):
@@ -99,6 +104,12 @@ def download_pkgs(url, save_dir, packages_first):
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Download packages for opkg')
+    parser.add_argument('--skip-kmod', '-k', help='skip kmod', action='store_const', required=False, const=True)
+    args = parser.parse_args()
+    if args.skip_kmod:
+        print('Skip kmod.')
+
     cd = os.path.dirname(os.path.abspath(__file__))
     save_dir = os.path.abspath(os.path.join(cd, conf.save_dir))
     print('save_dir:', save_dir)
@@ -109,9 +120,9 @@ if __name__ == '__main__':
     for url in conf.urls:
         if not url.endswith('/'):
             url += '/'
-        download_pkgs(url, save_dir, True)
+        download_pkgs(url, save_dir, True, args.skip_kmod)
 
     for url in conf.urls:
         if not url.endswith('/'):
             url += '/'
-        download_pkgs(url, save_dir, False)
+        download_pkgs(url, save_dir, False, args.skip_kmod)
