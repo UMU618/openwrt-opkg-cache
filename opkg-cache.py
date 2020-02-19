@@ -65,16 +65,19 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod):
         with open(path, "r") as f:
             last_pkg = ''
             size = 0
+            skip = False
             for line in f.read().splitlines():
                 if line.startswith(conf.FILENAME):
                     filename = line[len(conf.FILENAME):]
-                    last_pkg = download(url + filename, save_dir)
                     if skip_kmod and filename.startswith('kmod-'):
+                        skip = True
                         print('Skipping', filename)
                         continue
-                if line.startswith(conf.SIZE):
+                    skip = False
+                    last_pkg = download(url + filename, save_dir)
+                elif line.startswith(conf.SIZE) and not skip:
                     size = int(line[len(conf.SIZE):])
-                if line.startswith(conf.HASH):
+                elif line.startswith(conf.HASH) and not skip:
                     actual_size = os.path.getsize(last_pkg)
                     if size == actual_size:
                         hash = line[len(conf.HASH):]
