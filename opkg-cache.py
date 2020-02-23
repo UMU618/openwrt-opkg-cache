@@ -112,7 +112,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download packages for opkg')
     parser.add_argument('--skip-kmod', '-k', help='skip kmod',
                         action='store_const', required=False, const=True)
-    parser.add_argument('--starts-with', '-k',
+    parser.add_argument('--starts-with', '-s',
                         help='only packages starts with <str>', nargs='?')
     parser.add_argument('--update', '-u', help='update packages',
                         action='store_const', required=False, const=True)
