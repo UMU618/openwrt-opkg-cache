@@ -53,7 +53,7 @@ def get_file_hash(path):
     return h.hexdigest()
 
 
-def download_pkgs(url, save_dir, packages_first, skip_kmod, update):
+def download_pkgs(url, save_dir, packages_first, skip_kmod, update, starts_with=''):
     path = download(url + 'Packages', save_dir, packages_first and update)
     if packages_first:
         download(url + 'Packages.asc', save_dir, update)
@@ -69,7 +69,7 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod, update):
             for line in f.read().splitlines():
                 if line.startswith(conf.FILENAME):
                     filename = line[len(conf.FILENAME):]
-                    if skip_kmod and filename.startswith('kmod-'):
+                    if (starts_with and not filename.startswith(starts_with)) or (skip_kmod and filename.startswith('kmod-')):
                         skip = True
                         print('Skipping', filename)
                         continue
@@ -84,13 +84,13 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod, update):
                         actual_hash = get_file_hash(last_pkg)
                         if hash != actual_hash:
                             print('Hash of', last_pkg, 'is',
-                                actual_hash, 'should be', hash)
+                                  actual_hash, 'should be', hash)
                             download(url + filename, save_dir, True)
                         #else:
                         #    print('Hash of', last_pkg, 'checked')
                     else:
                         print('Size of', last_pkg, 'is',
-                            actual_size, 'should be', size)
+                              actual_size, 'should be', size)
                         download(url + filename, save_dir, True)
 
 # s = urllib.parse.urlparse('http://downloads.openwrt.org/releases/18.06.4/targets/ramips/mt7620/')
@@ -110,13 +110,19 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod, update):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download packages for opkg')
-    parser.add_argument('--skip-kmod', '-k', help='skip kmod', action='store_const', required=False, const=True)
-    parser.add_argument('--update', '-u', help='update packages', action='store_const', required=False, const=True)
+    parser.add_argument('--skip-kmod', '-k', help='skip kmod',
+                        action='store_const', required=False, const=True)
+    parser.add_argument('--starts-with', '-k',
+                        help='only packages starts with <str>', nargs='?')
+    parser.add_argument('--update', '-u', help='update packages',
+                        action='store_const', required=False, const=True)
     args = parser.parse_args()
     if args.skip_kmod:
         print('Skip kmod.')
     if args.update:
         print('Update packages.')
+    if args.starts_with:
+        print('Only packages starts with', args.starts_with)
 
     cd = os.path.dirname(os.path.abspath(__file__))
     save_dir = os.path.abspath(os.path.join(cd, conf.save_dir))
@@ -133,4 +139,5 @@ if __name__ == '__main__':
     for url in conf.urls:
         if not url.endswith('/'):
             url += '/'
-        download_pkgs(url, save_dir, False, args.skip_kmod, args.update)
+        download_pkgs(url, save_dir, False, args.skip_kmod,
+                      args.update, args.starts_with)
