@@ -16,9 +16,9 @@ def get_save_path(url, save_dir):
     return os.path.join(save_dir, path)
 
 
-def download(url, save_dir):
+def download(url, save_dir, update_exists=False):
     save_path = get_save_path(url, save_dir)
-    if os.path.isfile(save_path):
+    if not update_exists and os.path.isfile(save_path):
         #print('File', save_path, 'exists, ignored.')
         return save_path
 
@@ -53,13 +53,13 @@ def get_file_hash(path):
     return h.hexdigest()
 
 
-def download_pkgs(url, save_dir, packages_first, skip_kmod):
-    path = download(url + 'Packages', save_dir)
+def download_pkgs(url, save_dir, packages_first, skip_kmod, update):
+    path = download(url + 'Packages', save_dir, packages_first and update)
     if packages_first:
-        download(url + 'Packages.asc', save_dir)
-        download(url + 'Packages.gz', save_dir)
-        download(url + 'Packages.manifest', save_dir)
-        download(url + 'Packages.sig', save_dir)
+        download(url + 'Packages.asc', save_dir, update)
+        download(url + 'Packages.gz', save_dir, update)
+        download(url + 'Packages.manifest', save_dir, update)
+        download(url + 'Packages.sig', save_dir, update)
     else:
         print('open', path, 'for parsing...')
         with open(path, "r") as f:
@@ -85,11 +85,13 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod):
                         if hash != actual_hash:
                             print('Hash of', last_pkg, 'is',
                                 actual_hash, 'should be', hash)
+                            download(url + filename, save_dir, True)
                         #else:
                         #    print('Hash of', last_pkg, 'checked')
                     else:
                         print('Size of', last_pkg, 'is',
                             actual_size, 'should be', size)
+                        download(url + filename, save_dir, True)
 
 # s = urllib.parse.urlparse('http://downloads.openwrt.org/releases/18.06.4/targets/ramips/mt7620/')
 # base_url = s.scheme + '://' + s.netloc + s.path
@@ -109,9 +111,12 @@ def download_pkgs(url, save_dir, packages_first, skip_kmod):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Download packages for opkg')
     parser.add_argument('--skip-kmod', '-k', help='skip kmod', action='store_const', required=False, const=True)
+    parser.add_argument('--update', '-u', help='update packages', action='store_const', required=False, const=True)
     args = parser.parse_args()
     if args.skip_kmod:
         print('Skip kmod.')
+    if args.update:
+        print('Update packages.')
 
     cd = os.path.dirname(os.path.abspath(__file__))
     save_dir = os.path.abspath(os.path.join(cd, conf.save_dir))
@@ -123,9 +128,9 @@ if __name__ == '__main__':
     for url in conf.urls:
         if not url.endswith('/'):
             url += '/'
-        download_pkgs(url, save_dir, True, args.skip_kmod)
+        download_pkgs(url, save_dir, True, args.skip_kmod, args.update)
 
     for url in conf.urls:
         if not url.endswith('/'):
             url += '/'
-        download_pkgs(url, save_dir, False, args.skip_kmod)
+        download_pkgs(url, save_dir, False, args.skip_kmod, args.update)
